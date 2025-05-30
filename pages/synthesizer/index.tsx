@@ -8,11 +8,6 @@ interface ReportCard {
   content: string;
 }
 
-interface ReportResult {
-  cards: ReportCard[];
-  followup: string;
-}
-
 export default function SynthesizerPage() {
   const [topic, setTopic] = useState("");
   const [industry, setIndustry] = useState("");
@@ -25,10 +20,8 @@ export default function SynthesizerPage() {
   const [followupAnswers, setFollowupAnswers] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ReportResult>({
-    cards: [],
-    followup: ""
-  });
+  const [resultCards, setResultCards] = useState<ReportCard[]>([]);
+  const [followup, setFollowup] = useState("");
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -49,21 +42,39 @@ export default function SynthesizerPage() {
         })
       });
 
-      // ✅ Debug: response status + raw body
-      console.log("🔍 Response status:", res.status);
       const rawText = await res.text();
-      console.log("🔍 Raw Response:", rawText);
-
-      if (!res.ok) {
-        throw new Error(`Server error ${res.status}: ${rawText}`);
-      }
-
-      const data = JSON.parse(rawText); // JSON 안전 파싱
-      setResult(data);
+      const data = JSON.parse(rawText);
+      setResultCards(data.cards || []);
+      setFollowup(""); // reset followup
     } catch (err) {
       console.error("⚠️ Generation failed:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFollowupOnly = async () => {
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          industry,
+          country,
+          language,
+          goal,
+          situation,
+          subIndustry: industryDetail,
+          isPro,
+          followup_answers: []
+        })
+      });
+
+      const raw = await res.json();
+      setFollowup(raw.followup || "");
+    } catch (err) {
+      console.error("⚠️ Follow-up generation failed:", err);
     }
   };
 
@@ -169,10 +180,18 @@ export default function SynthesizerPage() {
           >
             {loading ? "Generating your personalized report..." : "Generate Report"}
           </button>
+
+          <button
+            onClick={handleFollowupOnly}
+            className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 w-full"
+            disabled={loading}
+          >
+            Generate Follow-Up Questions
+          </button>
         </div>
 
         <div className="space-y-4">
-          {result.cards.map((card) => (
+          {resultCards.map((card) => (
             <ReportSection
               key={card.id}
               id={card.id}
@@ -181,23 +200,23 @@ export default function SynthesizerPage() {
             />
           ))}
 
-          {result.followup && (
+          {followup && (
             <div className="mt-6 p-4 border border-blue-200 bg-blue-50 rounded text-black">
               <h2 className="font-bold text-lg text-blue-900 mb-2">
                 Please answer these follow-up questions to improve report quality:
               </h2>
               <p className="text-sm text-blue-800 whitespace-pre-line mb-4">
-                {result.followup}
+                {followup}
               </p>
               <div className="space-y-2">
-                {result.followup
+                {followup
                   .split("\n")
-                  .filter((line) => line.trim().startsWith("-"))
+                  .filter((line) => line.trim().startsWith("-") || line.trim().startsWith("•"))
                   .map((q, idx) => (
                     <textarea
                       key={idx}
                       className="w-full border p-2 rounded bg-white text-black"
-                      placeholder={`Your answer to: ${q.replace("-", "").trim()}`}
+                      placeholder={`Your answer to: ${q.replace(/^[-•]/, "").trim()}`}
                       value={followupAnswers[idx] || ""}
                       onChange={(e) => handleFollowupChange(idx, e.target.value)}
                     />
