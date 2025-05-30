@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import ReportSection from "@/components/ReportSection";
 
 interface ReportCard {
@@ -10,7 +9,6 @@ interface ReportCard {
 }
 
 export default function SynthesizerPage() {
-  const router = useRouter();
 
   const [topic, setTopic] = useState("");
   const [industry, setIndustry] = useState("");
