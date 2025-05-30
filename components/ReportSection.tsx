@@ -2,16 +2,17 @@ type SectionProps = {
   id?: string;
   title: string;
   content: string;
-  type?: "summary" | "analysis" | "news" | "insight"; // 아직 있어도 영향 없음
+  type?: "summary" | "analysis" | "news" | "insight";
 };
 
-// 마크다운 기호 제거 함수
+// 마크다운 제거 함수
 function cleanMarkdown(text: string): string {
   return text
-    .replace(/\*\*(.*?)\*\*/g, "$1")   // **bold** → bold
-    .replace(/#+\s*(.*)/g, "$1")       // ## Title → Title
-    .replace(/^- /gm, "• ")            // - bullet → • bullet (선택사항)
-    .replace(/\n{3,}/g, "\n\n")        // 3줄 이상 줄바꿈 → 2줄로 정리
+    .replace(/\*\*(.*?)\*\*/g, "$1")     // **bold** → bold
+    .replace(/#+\s*(.*)/g, "$1")         // ## Heading → Heading
+    .replace(/^- /gm, "• ")              // - bullet → • bullet
+    .replace(/-{3,}/g, "")               // --- separator 제거
+    .replace(/\n{3,}/g, "\n\n")          // 너무 많은 줄바꿈 정리
     .trim();
 }
 
@@ -21,14 +22,11 @@ export default function ReportSection({ id, title, content }: SectionProps) {
   const cleanedContent = cleanMarkdown(content);
 
   return (
-    <div
-      id={id}
-      className="border border-gray-200 p-4 rounded shadow-sm bg-white text-black"
-    >
-      <h2 className="text-lg font-bold mb-2 text-blue-800">
-        {title.replace("_", " ")}
+    <div id={id} className="p-6 bg-white text-black">
+      <h2 className="text-xl font-semibold mb-3">
+        {title.replace(/_/g, " ")}
       </h2>
-      <p className="whitespace-pre-wrap text-sm text-gray-900">
+      <p className="whitespace-pre-wrap text-base leading-relaxed">
         {cleanedContent}
       </p>
     </div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import ReportSection from "@/components/ReportSection";
 
 interface ReportCard {
@@ -9,6 +10,8 @@ interface ReportCard {
 }
 
 export default function SynthesizerPage() {
+  const router = useRouter();
+
   const [topic, setTopic] = useState("");
   const [industry, setIndustry] = useState("");
   const [country, setCountry] = useState("");
@@ -20,8 +23,26 @@ export default function SynthesizerPage() {
   const [followupAnswers, setFollowupAnswers] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
   const [resultCards, setResultCards] = useState<ReportCard[]>([]);
   const [followup, setFollowup] = useState("");
+
+  const steps = [
+    "Fetching recent economic papers...",
+    "Analyzing relevant news...",
+    "Summarizing institutional forecasts...",
+    "Synthesizing insights for your industry...",
+    "Finalizing your report..."
+  ];
+
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setStepIndex((prev) => (prev + 1) % steps.length);
+      }, 1800);
+      return () => clearInterval(interval);
+    }
+  }, [loading]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -45,12 +66,23 @@ export default function SynthesizerPage() {
       const rawText = await res.text();
       const data = JSON.parse(rawText);
       setResultCards(data.cards || []);
-      setFollowup(""); // reset followup
+      setFollowup("");
     } catch (err) {
       console.error("⚠️ Generation failed:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportPDF = () => {
+    const pdfData = {
+      topic,
+      industry,
+      country,
+      cards: resultCards
+    };
+    localStorage.setItem("wiserbond_pdf", JSON.stringify(pdfData));
+    window.open("/export/pdf", "_blank");
   };
 
   const handleFollowupOnly = async () => {
@@ -94,83 +126,30 @@ export default function SynthesizerPage() {
         </div>
 
         <div className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium text-black">Macro Topic</span>
-            <input
-              className="w-full border p-2 rounded mt-1 text-black bg-white"
-              placeholder="e.g., Inflation, Trade War, Fed Policy"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-black">Industry/Sector</span>
-            <input
-              className="w-full border p-2 rounded mt-1 text-black bg-white"
-              placeholder="e.g., Supply Chain, Real Estate"
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-black">Country</span>
-            <input
-              className="w-full border p-2 rounded mt-1 text-black bg-white"
-              placeholder="e.g., Canada, Germany, India"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-            />
-          </label>
+          <input className="w-full border p-2 rounded text-black bg-white" placeholder="Macro Topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
+          <input className="w-full border p-2 rounded text-black bg-white" placeholder="Industry / Sector" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+          <input className="w-full border p-2 rounded text-black bg-white" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
 
           <details className="border p-3 rounded bg-white text-black">
-            <summary className="cursor-pointer font-semibold">Refine your context to get a more focused report (optional)</summary>
+            <summary className="cursor-pointer font-semibold">Refine your context (optional)</summary>
             <div className="mt-4 space-y-3">
-              <input
-                className="w-full border p-2 rounded bg-white text-black"
-                placeholder="What decision are you trying to make? (Your goal)"
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-              />
-              <input
-                className="w-full border p-2 rounded bg-white text-black"
-                placeholder="Is there a recent event driving this? (Your situation)"
-                value={situation}
-                onChange={(e) => setSituation(e.target.value)}
-              />
-              <input
-                className="w-full border p-2 rounded bg-white text-black"
-                placeholder="What specific industry or sub-sector is this related to?"
-                value={industryDetail}
-                onChange={(e) => setIndustryDetail(e.target.value)}
-              />
+              <input className="w-full border p-2 rounded bg-white text-black" placeholder="Goal (Decision you’re making)" value={goal} onChange={(e) => setGoal(e.target.value)} />
+              <input className="w-full border p-2 rounded bg-white text-black" placeholder="Situation (Recent event?)" value={situation} onChange={(e) => setSituation(e.target.value)} />
+              <input className="w-full border p-2 rounded bg-white text-black" placeholder="Sub-sector / Industry detail" value={industryDetail} onChange={(e) => setIndustryDetail(e.target.value)} />
             </div>
           </details>
 
-          <label className="block">
-            <span className="text-sm font-medium text-black">Output Language</span>
-            <select
-              className="w-full border p-2 rounded mt-1 text-black bg-white"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-            >
-              <option value="English">English</option>
-              <option value="Korean">Korean</option>
-              <option value="Spanish">Spanish</option>
-              <option value="Indian">Indian</option>
-              <option value="Chinese">Chinese</option>
-            </select>
-          </label>
+          <select className="w-full border p-2 rounded text-black bg-white" value={language} onChange={(e) => setLanguage(e.target.value)}>
+            <option value="English">English</option>
+            <option value="Korean">Korean</option>
+            <option value="Spanish">Spanish</option>
+            <option value="Indian">Indian</option>
+            <option value="Chinese">Chinese</option>
+          </select>
 
           <label className="flex items-center gap-2">
-            <span className="text-sm text-black">Turn on Pro Mode for expert-level depth and technical precision (optional)</span>
-            <input
-              type="checkbox"
-              checked={isPro}
-              onChange={() => setIsPro(!isPro)}
-            />
-            <span className="text-sm text-black">I’m familiar with this industry (Pro mode)</span>
+            <input type="checkbox" checked={isPro} onChange={() => setIsPro(!isPro)} />
+            <span className="text-sm text-black">Pro Mode (Advanced insights)</span>
           </label>
 
           <button
@@ -178,7 +157,7 @@ export default function SynthesizerPage() {
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
             disabled={loading}
           >
-            {loading ? "Generating your personalized report..." : "Generate Report"}
+            {loading ? steps[stepIndex] : "Generate Report"}
           </button>
 
           <button
@@ -188,16 +167,20 @@ export default function SynthesizerPage() {
           >
             Generate Follow-Up Questions
           </button>
+
+          {resultCards.length > 0 && (
+            <button
+              onClick={handleExportPDF}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
+            >
+              Export as PDF
+            </button>
+          )}
         </div>
 
         <div className="space-y-4">
           {resultCards.map((card) => (
-            <ReportSection
-              key={card.id}
-              id={card.id}
-              title={card.title}
-              content={card.content}
-            />
+            <ReportSection key={card.id} id={card.id} title={card.title} content={card.content} />
           ))}
 
           {followup && (
@@ -205,9 +188,7 @@ export default function SynthesizerPage() {
               <h2 className="font-bold text-lg text-blue-900 mb-2">
                 Please answer these follow-up questions to improve report quality:
               </h2>
-              <p className="text-sm text-blue-800 whitespace-pre-line mb-4">
-                {followup}
-              </p>
+              <p className="text-sm text-blue-800 whitespace-pre-line mb-4">{followup}</p>
               <div className="space-y-2">
                 {followup
                   .split("\n")
