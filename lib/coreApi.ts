@@ -15,13 +15,13 @@ export async function searchCorePapers(
         },
         headers: {
           Authorization: `Bearer ${process.env.CORE_API_KEY}`, // CORE v3 인증 토큰
-          Accept: "application/json", // 🔥 이 줄이 중요함
+          Accept: "application/json", // 🔥 이 줄이 없으면 HTML 응답받을 수도 있음
         },
-        maxRedirects: 5, // 🔄 리디렉션 따라가게 설정
+        maxRedirects: 5, // 🔄 리디렉션 대응
       }
     );
 
-    const papers: Paper[] = response.data.results.map((item: any) => ({
+    const papers: Paper[] = response.data.results.map((item: Record<string, any>) => ({
       title: item.title || "Untitled",
       authors: item.authors?.map((a: any) => a.name) || ["Unknown"],
       year: item.year_published?.toString() || "N/A",

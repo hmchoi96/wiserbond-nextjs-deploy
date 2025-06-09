@@ -19,7 +19,7 @@ Summarize the core predictive insights.`;
 
   const result = await querySupportAI(instruction);
 
-  return result.papers.map((p, i) => ({
+  return result.papers.map((p) => ({
     title: p.title,
     summary: result.summary, // shared summary again
     doi: p.url

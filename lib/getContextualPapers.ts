@@ -18,7 +18,7 @@ Summarize the main themes across the most cited or insightful papers.`;
 
   const result = await querySupportAI(instruction);
 
-  return result.papers.map((p, i) => ({
+  return result.papers.map((p) => ({
     title: p.title,
     summary: result.summary, // general summary (shared across all papers)
     doi: p.url

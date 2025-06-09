@@ -47,7 +47,7 @@ export function getInterpretationPrompt(params: InterpretationParams): string {
     ? "Use technical, domain-specific language suitable for industry professionals."
     : "Use simple, clear language with helpful explanations for non-experts.";
 
-  const safe = (v: string) => v?.trim() || "[Not provided]";
+  //const safe = (v: string) => v?.trim() || "[Not provided]";
 
   const followup_qna =
     followup_questions.length > 0

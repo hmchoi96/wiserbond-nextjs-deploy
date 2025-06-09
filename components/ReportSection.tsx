@@ -18,7 +18,7 @@ function cleanMarkdown(text: string): string {
     .trim();
 }
 
-export default function ReportSection({ id, title, content, type }: SectionProps) {
+export default function ReportSection({ id, title, content }: SectionProps) {
   if (!content?.trim()) return null;
 
   const cleanedContent = cleanMarkdown(content);
