@@ -5,19 +5,21 @@ type SectionProps = {
   type?: "summary" | "analysis" | "news" | "insight";
 };
 
-// 마크다운 제거 함수
+// 마크다운 제거 + 포맷 보정
 function cleanMarkdown(text: string): string {
   return text
-    .replace(/\*\*(.*?)\*\*/g, "$1")     // **bold** → bold
-    .replace(/#+\s*(.*)/g, "$1")         // ## Heading → Heading
-    .replace(/^- /gm, "• ")              // - bullet → • bullet
-    .replace(/-{3,}/g, "")               // --- separator 제거
-    .replace(/\n{3,}/g, "\n\n")          // 너무 많은 줄바꿈 정리
+    .replace(/\*\*(.*?)\*\*/g, "$1")     // **bold**
+    .replace(/#+\s*(.*)/g, "$1")         // headings
+    .replace(/^- /gm, "• ")              // bullet
+    .replace(/_{3,}|-{3,}/g, "")         // --- or ___ 구분 제거
+    .replace(/\[(.*?)\]\(.*?\)/g, "$1")  // [링크텍스트](url) → 링크텍스트
+    .replace(/!\[.*?\]\(.*?\)/g, "")     // 이미지 제거
+    .replace(/\n{3,}/g, "\n\n")          // 줄바꿈 정리
     .trim();
 }
 
-export default function ReportSection({ id, title, content }: SectionProps) {
-  if (!content) return null;
+export default function ReportSection({ id, title, content, type }: SectionProps) {
+  if (!content?.trim()) return null;
 
   const cleanedContent = cleanMarkdown(content);
 

@@ -1,7 +1,7 @@
 // lib/getProjectionPapers.ts
-// getProjectionPapers() delivers forecasting-oriented insights—models, quantified risks, 
-// and scenario-based implications—to support the strategic interpretation layer only.
-import { fetchOpenAlexPapers } from "@/lib/openalex";
+// Retrieves forward-looking academic insights (projections, risk models, scenarios)
+
+import { querySupportAI } from "@/lib/supportAI";
 
 export async function getProjectionPapers(
   topic: string,
@@ -12,40 +12,16 @@ export async function getProjectionPapers(
   goal?: string,
   followup?: string
 ) {
-  const projectionKeywords = "projection OR forecast OR scenario OR risk";
+  const instruction = `Find academic papers related to forecasting, projections, or risk modeling for the topic "${topic}" in the ${industry} sector of ${country}.
+Emphasize papers using quantified scenarios, causal reasoning, or predictive models.
+Include dimensions like "${subIndustry}", "${situation}", "${goal}", or follow-up issues like "${followup}" if helpful.
+Summarize the core predictive insights.`;
 
-  const fullQuery = [
-    topic,
-    industry,
-    subIndustry,
-    country,
-    situation,
-    goal,
-    followup,
-    projectionKeywords
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const result = await querySupportAI(instruction);
 
-  let papers = await fetchOpenAlexPapers(fullQuery);
-
-  // fallback
-  if (!papers || papers.length < 2) {
-    const fallbackQuery = [topic, industry, country, projectionKeywords]
-      .filter(Boolean)
-      .join(" ");
-    papers = await fetchOpenAlexPapers(fallbackQuery);
-  }
-
-  const topPapers = papers
-    .filter((p) => p.abstract && p.doi)
-    .sort((a, b) => (b.citationCount || 0) - (a.citationCount || 0))
-    .slice(0, 3)
-    .map((p) => ({
-      title: p.title,
-      summary: p.abstract,
-      doi: p.doi
-    }));
-
-  return topPapers;
+  return result.papers.map((p, i) => ({
+    title: p.title,
+    summary: result.summary, // shared summary again
+    doi: p.url
+  }));
 }

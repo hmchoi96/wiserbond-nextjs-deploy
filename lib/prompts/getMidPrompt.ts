@@ -13,7 +13,8 @@ export function getMidPrompt(params: BigPromptParams): string {
     is_pro = false,
     followup_questions = [],
     followup_answers = [],
-    academicContext
+    academicContext,
+    supportSummary = ""
   } = params;
 
   const tone_instruction = is_pro
@@ -31,6 +32,11 @@ export function getMidPrompt(params: BigPromptParams): string {
     followup_qna.length > 0
       ? followup_qna.join("\n")
       : "[No follow-up questions were generated or selected]";
+
+  const support_section =
+    supportSummary.trim().length > 0
+      ? `\n# Additional Academic Summary (Support AI):\n${supportSummary}\n\nUse this if it adds new insights or perspectives that complement the academic context.`
+      : "";
 
   return `
 You are a macro strategy analyst working at a top-tier consulting firm.
@@ -51,9 +57,10 @@ ${followup_section}
 
 # Academic Context Insights:
 ${academicContext}
-
 Use the academic insights above to support your analysis of policy responses, industry adaptation, and sectoral patterns.
 Incorporate them as reasoning tools — do not summarize them directly.
+
+${support_section}
 
 Use this context to frame your evaluation and prioritize what matters most.
 
@@ -81,7 +88,9 @@ Your response must:
 - Avoid emotional framing or sentiment labels.
 - This section is only for sector-level trends and policy/industry responses.
 - Do not include strategic interpretation or forecasts — those will be generated separately.
-
+- If you use any specific article, news source, dataset, or academic paper, please include the source URL explicitly at the end of your output in the format:
+  Source: https://...
+  
 If no recent, relevant data is available:
 - Fallback to a structurally similar past case (e.g., same industry + similar monetary/policy conditions).
 - Clearly indicate the fallback nature of the data.

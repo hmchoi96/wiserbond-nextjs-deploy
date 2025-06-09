@@ -1,13 +1,16 @@
+// lib/openalex.ts
+import { Paper } from "@/lib/types/paper";
+
 interface RawOpenAlexItem {
   title: string;
-  abstract_inverted_index?: { [key: string]: number[] };
+  publication_year?: number;
+  authorships?: { author: { display_name: string } }[];
   doi?: string;
   cited_by_count?: number;
 }
-import { Paper } from "@/lib/types/paper";
 
-export async function fetchOpenAlexPapers(query: string): Promise<Paper[]> {
-  const searchUrl = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=10&sort=cited_by_count:desc`;
+export async function searchOpenAlexPapers(query: string, limit: number = 5): Promise<Paper[]> {
+  const searchUrl = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=${limit}&sort=cited_by_count:desc`;
 
   const res = await fetch(searchUrl);
 
@@ -20,11 +23,9 @@ export async function fetchOpenAlexPapers(query: string): Promise<Paper[]> {
 
   const papers: Paper[] = data.results.map((item: RawOpenAlexItem) => ({
     title: item.title,
-    abstract: item.abstract_inverted_index
-      ? Object.keys(item.abstract_inverted_index).join(" ")
-      : "No abstract available.",
-    doi: item.doi,
-    citationCount: item.cited_by_count ?? 0
+    authors: item.authorships?.map((a) => a.author.display_name) || ["Unknown"],
+    year: item.publication_year?.toString() || "N/A",
+    url: item.doi ? `https://doi.org/${item.doi}` : "N/A"
   }));
 
   return papers;

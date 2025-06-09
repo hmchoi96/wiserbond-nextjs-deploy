@@ -1,7 +1,8 @@
+// lib/types/paper.ts
+
 export type Paper = {
-    title: string;
-    abstract: string;
-    doi: string;
-    citationCount?: number;
-  };
-  
+  title: string;
+  authors: string[];
+  year: string;
+  url: string;
+};

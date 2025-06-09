@@ -17,12 +17,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     interpretation,
     executive,
     user_email = "",
-    forecast_window = 90, // default: 90일 후 recap 예정
+    forecast_window = "3M", // ✅ 문자열 기준 (예: "3M", "6M", etc.)
     followup_answers = [],
-    // 👇 새로 추가된 사용자 맥락 정보
     goal = "",
     situation = "",
-    industry_detail = ""
+    industry_detail = "",
+    support_sources = [] // ✅ 논문 출처 리스트 (array of { title, url, year, authors })
   } = req.body;
 
   const now = new Date().toISOString();
@@ -39,16 +39,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       interpretation,
       executive,
       user_email,
-      forecast_window,
+      forecast_window: String(forecast_window), // ✅ 보강: 항상 문자열로 저장
       created_at: now,
       last_checked: now,
       recap_needed: false,
       actual_outcome: null,
       prediction_accuracy: null,
-      followup_responses: JSON.stringify(followup_answers),
+      followup_responses: JSON.stringify(followup_answers), // ✅ JSON 배열로 직렬화
       goal,
       situation,
-      industry_detail
+      industry_detail,
+      support_sources: JSON.stringify(support_sources) // ✅ JSONB로 저장
     }
   ]);
 

@@ -9,7 +9,6 @@ interface ReportCard {
 }
 
 export default function SynthesizerPage() {
-
   const [topic, setTopic] = useState("");
   const [industry, setIndustry] = useState("");
   const [country, setCountry] = useState("");
@@ -97,6 +96,7 @@ export default function SynthesizerPage() {
           situation,
           subIndustry: industryDetail,
           isPro,
+          followup_only: true,
           followup_answers: []
         })
       });
@@ -116,28 +116,33 @@ export default function SynthesizerPage() {
 
   return (
     <div className="min-h-screen bg-[#f4f4f5] text-black">
-      <div className="max-w-3xl mx-auto p-6 space-y-6">
-        <h1 className="text-2xl font-bold">Wiserbond Synthesizer</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto p-6">
+        {/* Left: Input Form */}
+        <div className="space-y-4 bg-white p-4 rounded shadow-md max-h-screen overflow-auto">
+          <h1 className="text-xl font-bold">Wiserbond Synthesizer</h1>
 
-        <div className="p-4 border bg-yellow-100 rounded text-sm text-yellow-800">
-          This tool tells how a macro topic affects an industry in a country, explained in your preferred language.
-        </div>
+          <div className="text-sm text-gray-600">
+            This tool tells how a macro topic affects an industry in a country.
+          </div>
 
-        <div className="space-y-4">
-          <input className="w-full border p-2 rounded text-black bg-white" placeholder="Macro Topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
-          <input className="w-full border p-2 rounded text-black bg-white" placeholder="Industry / Sector" value={industry} onChange={(e) => setIndustry(e.target.value)} />
-          <input className="w-full border p-2 rounded text-black bg-white" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+          <input className="w-full border px-2 py-1 rounded text-sm" placeholder="Macro Topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
+          <input className="w-full border px-2 py-1 rounded text-sm" placeholder="Industry / Sector" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+          <input className="w-full border px-2 py-1 rounded text-sm" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
 
-          <details className="border p-3 rounded bg-white text-black">
-            <summary className="cursor-pointer font-semibold">Refine your context (optional)</summary>
-            <div className="mt-4 space-y-3">
-              <input className="w-full border p-2 rounded bg-white text-black" placeholder="Goal (Decision you’re making)" value={goal} onChange={(e) => setGoal(e.target.value)} />
-              <input className="w-full border p-2 rounded bg-white text-black" placeholder="Situation (Recent event?)" value={situation} onChange={(e) => setSituation(e.target.value)} />
-              <input className="w-full border p-2 rounded bg-white text-black" placeholder="Sub-sector / Industry detail" value={industryDetail} onChange={(e) => setIndustryDetail(e.target.value)} />
+          <details className="border px-2 py-2 rounded text-sm">
+            <summary className="cursor-pointer font-semibold">Refine your context</summary>
+            <div className="mt-2 space-y-2">
+              <input className="w-full border px-2 py-1 rounded text-sm" placeholder="Goal" value={goal} onChange={(e) => setGoal(e.target.value)} />
+              <input className="w-full border px-2 py-1 rounded text-sm" placeholder="Situation" value={situation} onChange={(e) => setSituation(e.target.value)} />
+              <input className="w-full border px-2 py-1 rounded text-sm" placeholder="Sub-sector / Detail" value={industryDetail} onChange={(e) => setIndustryDetail(e.target.value)} />
             </div>
           </details>
 
-          <select className="w-full border p-2 rounded text-black bg-white" value={language} onChange={(e) => setLanguage(e.target.value)}>
+          <button onClick={handleFollowupOnly} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full text-sm">
+            Generate Follow-Up Questions
+          </button>
+
+          <select className="w-full border px-2 py-1 rounded text-sm" value={language} onChange={(e) => setLanguage(e.target.value)}>
             <option value="English">English</option>
             <option value="Korean">Korean</option>
             <option value="Spanish">Spanish</option>
@@ -145,61 +150,48 @@ export default function SynthesizerPage() {
             <option value="Chinese">Chinese</option>
           </select>
 
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={isPro} onChange={() => setIsPro(!isPro)} />
-            <span className="text-sm text-black">Pro Mode (Advanced insights)</span>
+            Pro Mode - Expert-level depth (I know this industry well)
           </label>
 
-          <button
-            onClick={handleGenerate}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
-            disabled={loading}
-          >
+          <button onClick={handleGenerate} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full text-sm" disabled={loading}>
             {loading ? steps[stepIndex] : "Generate Report"}
           </button>
 
-          <button
-            onClick={handleFollowupOnly}
-            className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 w-full"
-            disabled={loading}
-          >
-            Generate Follow-Up Questions
-          </button>
-
           {resultCards.length > 0 && (
-            <button
-              onClick={handleExportPDF}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
-            >
+            <button onClick={handleExportPDF} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full text-sm">
               Export as PDF
             </button>
           )}
         </div>
 
-        <div className="space-y-4">
+        {/* Right: Output Display */}
+        <div className="space-y-4 overflow-auto">
           {resultCards.map((card) => (
             <ReportSection key={card.id} id={card.id} title={card.title} content={card.content} />
           ))}
 
           {followup && (
-            <div className="mt-6 p-4 border border-blue-200 bg-blue-50 rounded text-black">
-              <h2 className="font-bold text-lg text-blue-900 mb-2">
-                Please answer these follow-up questions to improve report quality:
+            <div className="p-4 border border-blue-200 bg-blue-50 rounded">
+              <h2 className="font-bold text-base text-blue-900 mb-2">
+                Answer these (at least one) to get a more personalized report:
               </h2>
-              <p className="text-sm text-blue-800 whitespace-pre-line mb-4">{followup}</p>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {followup
                   .split("\n")
                   .filter((line) => line.trim().startsWith("-") || line.trim().startsWith("•"))
                   .map((q, idx) => (
-                    <textarea
-                      key={idx}
-                      className="w-full border p-2 rounded bg-white text-black"
-                      placeholder={`Your answer to: ${q.replace(/^[-•]/, "").trim()}`}
-                      value={followupAnswers[idx] || ""}
-                      onChange={(e) => handleFollowupChange(idx, e.target.value)}
-                    />
-                  ))}
+                    <div key={idx}>
+                      <p className="font-medium text-sm text-gray-800 mb-1">{q.replace(/^[-•]/, "").trim()}</p>
+                      <textarea
+                        className="w-full border px-2 py-1 rounded bg-white text-sm"
+                        placeholder="Your answer..."
+                        value={followupAnswers[idx] || ""}
+                        onChange={(e) => handleFollowupChange(idx, e.target.value)}
+                      />
+                    </div>
+                ))}
               </div>
             </div>
           )}

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { callGPT } from '@/lib/gpt';
+import { callGPT } from '@/lib/ai/gpt';
 import { getContextualPapers } from '@/lib/getContextualPapers';
 import { getProjectionPapers } from '@/lib/getProjectionPapers';
 
@@ -9,10 +9,12 @@ import { getSmallPrompt } from '@/lib/prompts/getSmallPrompt';
 import { getInterpretationPrompt } from '@/lib/prompts/getInterpretationPrompt';
 import { getExecutiveSummaryPrompt } from '@/lib/prompts/getExecutiveSummaryPrompt';
 import { getFollowupPrompt } from '@/lib/prompts/getFollowupPrompt';
+
 import saveReport from '@/lib/save';
+import { querySupportAI } from '@/lib/supportAI';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("💥 Incoming method:", req.method); // ✅ 디버깅용
+  console.log("💥 Incoming method:", req.method);
 
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Only POST method allowed" });
@@ -33,7 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     user_analysis = "",
     user_forecast = "",
     internal_comment = "",
-    user_email = ""
+    user_email = "",
+    followup_only = false // ✅ 신규 필드
   } = req.body;
 
   if (!topic || !industry || !country) {
@@ -41,7 +44,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Step 1: Fetch Academic Papers
+    // ✅ Followup Only 요청 처리
+    if (followup_only) {
+      const followupPrompt = getFollowupPrompt({
+        topic,
+        industry,
+        country,
+        subIndustry,
+        goal,
+        situation,
+        language
+      });
+
+      const followup = await callGPT(followupPrompt, "gpt-4o");
+
+      return res.status(200).json({
+        cards: [],
+        followup
+      });
+    }
+
+    // Step 1: Academic Papers from pre-defined functions
     const contextPapers = await getContextualPapers(
       topic, industry, country, subIndustry, situation, goal, followup_questions.join(" ")
     );
@@ -55,7 +78,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const academicContext = academicSummary(contextPapers);
     const academicProjection = academicSummary(projectionPapers);
 
-    // Step 2: Shared Prompt Parameters
+    // Step 1.5: GPT-style SupportAI query
+    const instruction = `서폿에이아이야, "${country} ${industry} ${topic}" 관련 논문 중 최근 2년 내 출판된 전략적 통찰이 있는 논문이 있다면 요약해줘. 분석 목적은 전략 판단이야.`;
+    const supportAIResult = await querySupportAI(instruction);
+    const supportSummary = supportAIResult.summary;
+
+    // Step 2: Shared Parameters
     const sharedParams = {
       topic,
       industry,
@@ -68,14 +96,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       followup_questions,
       followup_answers,
       is_pro: isPro,
-      academicContext
+      academicContext,
+      supportSummary
     };
 
-    // Step 3: Generate Prompts and Call GPT
+    // Step 3: Prompt Chain
     const big = await callGPT(getBigPrompt(sharedParams), "gpt-4o");
     const mid = await callGPT(getMidPrompt(sharedParams), "gpt-4o");
     const small = await callGPT(getSmallPrompt(sharedParams), "gpt-4o");
-
 
     const interpretationPrompt = getInterpretationPrompt({
       ...sharedParams,
@@ -112,7 +140,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const followup = await callGPT(followupPrompt, "gpt-4o");
 
-    // Step 4: Save to Supabase (uses current_date in DB)
+    // Step 4: Save to Supabase
     await saveReport({
       topic,
       industry,
@@ -131,7 +159,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       industry_detail: subIndustry
     });
 
-    // Step 5: Return result to frontend
+    // Step 5: Return
     res.status(200).json({
       cards: [
         { id: "exec_summary", title: "Executive Summary", type: "summary", content: exec_summary },
