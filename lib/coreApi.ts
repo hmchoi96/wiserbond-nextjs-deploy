@@ -1,6 +1,17 @@
 import axios from "axios";
 import { Paper } from "@/lib/types/paper";
 
+interface CoreAuthor {
+  name: string;
+}
+
+interface CoreItem {
+  title?: string;
+  authors?: CoreAuthor[];
+  year_published?: number;
+  urls?: string[];
+}
+
 export async function searchCorePapers(
   query: string,
   limit: number = 5
@@ -14,16 +25,16 @@ export async function searchCorePapers(
           limit: limit,
         },
         headers: {
-          Authorization: `Bearer ${process.env.CORE_API_KEY}`, // CORE v3 인증 토큰
-          Accept: "application/json", // 🔥 이 줄이 없으면 HTML 응답받을 수도 있음
+          Authorization: `Bearer ${process.env.CORE_API_KEY}`,
+          Accept: "application/json",
         },
-        maxRedirects: 5, // 🔄 리디렉션 대응
+        maxRedirects: 5,
       }
     );
 
-    const papers: Paper[] = response.data.results.map((item: Record<string, any>) => ({
+    const papers: Paper[] = response.data.results.map((item: CoreItem) => ({
       title: item.title || "Untitled",
-      authors: item.authors?.map((a: any) => a.name) || ["Unknown"],
+      authors: item.authors?.map((a) => a.name) || ["Unknown"],
       year: item.year_published?.toString() || "N/A",
       url: item.urls?.[0] || "N/A",
     }));

@@ -42,7 +42,7 @@ export default function ReportPDFLayout({
   // ✅ 1. 기존 reference 카드 확인
   const hasReferenceCard =
     cards.length > 0 && cards[cards.length - 1].title.toLowerCase().includes(REFERENCE);
-  const referenceCard = hasReferenceCard ? cards[cards.length - 1] : null;
+  //const referenceCard = hasReferenceCard ? cards[cards.length - 1] : null;
   const contentCards = hasReferenceCard ? cards.slice(0, -1) : cards;
 
   // ✅ 2. 자동 reference 추출 (없을 경우만)
